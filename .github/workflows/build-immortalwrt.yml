@@ -1,0 +1,61 @@
+name: Build ImmortalWrt 25.12 for RAX3000M
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build firmware
+        run: |
+          # 克隆你的 25.12 仓库源码
+          git clone https://github.com/tfnhui/immortalwrt-mt798x-25.12.git openwrt
+          cd openwrt
+
+          # 更新 feeds
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+          # 复制 RAX3000M 默认配置（25.12 版本）
+          # 注意：这个仓库的 defconfig 目录下可能文件名不同，先查看一下
+          if [ -f defconfig/mt7981-ax3000.config ]; then
+            cp defconfig/mt7981-ax3000.config .config
+          elif [ -f defconfig/cmcc_rax3000m.config ]; then
+            cp defconfig/cmcc_rax3000m.config .config
+          else
+            echo "未找到 RAX3000M 配置文件，请检查 defconfig 目录"
+            ls defconfig/
+            exit 1
+          fi
+
+          # 添加 OpenClash 软件源
+          echo "src-git openclash https://github.com/vernesong/OpenClash.git" >> feeds.conf.default
+
+          # 添加 Argon 主题软件源
+          echo "src-git argon https://github.com/jerrykuku/luci-theme-argon.git" >> feeds.conf.default
+
+          # 更新新添加的 feeds
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+          # ===== 选中要集成的插件 =====
+          echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
+          echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-diskman=y" >> .config
+
+          # 生成完整配置
+          make defconfig
+
+          # 开始编译
+          make download -j8
+          make -j$(nproc)
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortalwrt-25.12-firmware
+          path: openwrt/bin/targets/*/*/
