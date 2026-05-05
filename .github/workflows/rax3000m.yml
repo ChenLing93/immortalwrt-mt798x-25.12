@@ -17,7 +17,7 @@ jobs:
           cd openwrt
 
           # 直接复制配置文件
-          cp ../.github/workflows/.config .config
+          cp defconfig/rax3000m-openclash.config .config
 
           # 更新 feeds
           ./scripts/feeds update -a
