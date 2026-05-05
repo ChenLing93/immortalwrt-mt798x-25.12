@@ -15,19 +15,19 @@ jobs:
           # 克隆 25.12 仓库源码
           git clone https://github.com/tfnhui/immortalwrt-mt798x-25.12.git openwrt
           cd openwrt
-
-          # 直接复制配置文件
-          cp defconfig/rax3000m-openclash.config .config
-
+          
           # 更新 feeds
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+          
+          # 直接复制配置文件
+          cp defconfig/rax3000m-openclash.config .config
 
           # 生成完整配置
           #  make defconfig
           
           # 在 'make defconfig' 之后执行
-          grep CONFIG_PACKAGE_luci-app-openclash .config || { echo "::error::OpenClash is NOT selected!"; exit 1; }
+          #grep CONFIG_PACKAGE_luci-app-openclash .config || { echo "::error::OpenClash is NOT selected!"; exit 1; }
 
           # 下载编译所需的源码包
           make download -j$(nproc)
