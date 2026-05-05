@@ -10,6 +10,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 新增：获取当前日期
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+
       - name: Build firmware
         run: |
           # 克隆 25.12 仓库源码
@@ -22,12 +27,6 @@ jobs:
           
           # 直接复制配置文件
           cp defconfig/rax3000m-openclash.config .config
-
-          # 生成完整配置（被注释了）
-          # make defconfig
-          
-          # 验证 OpenClash（被注释了）
-          # grep CONFIG_PACKAGE_luci-app-openclash .config || { echo "::error::OpenClash is NOT selected!"; exit 1; }
 
           # 下载编译所需的源码包
           make download -j$(nproc)
@@ -45,21 +44,20 @@ jobs:
           path: openwrt/bin/targets/mediatek/filogic/
           if-no-files-found: warn
 
-      # ✅ 修正：这是一个独立的新步骤，需要正确缩进
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v1
         with:
-          name: "ImmortalWrt 固件 Build #${{ github.run_number }}"
-          tag_name: "build-${{ github.run_number }}-${{ github.run_id }}"
+          name: "RAX3000M 固件 ${{ steps.date.outputs.date }} #${{ github.run_number }}"
+          tag_name: "build-${{ steps.date.outputs.date }}-${{ github.run_number }}"
           body: |
             ## 自动编译固件
             
+            - 编译时间：${{ steps.date.outputs.date }}
             - 编译编号：#${{ github.run_number }}
-            - 设备：CMCC RAX3000M (eMMC)
-            - 内核：6.6
+            - 设备：CMCC RAX3000M (eMMC / NAND)
+            - 内核：6.12（25.12 版本）
             - 包含插件：OpenClash、磁盘管理、Argon 主题等
           files: |
-            openwrt/bin/targets/mediatek/filogic/*.itb
-            openwrt/bin/targets/mediatek/filogic/*.bin
+            openwrt/bin/targets/mediatek/filogic/
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
