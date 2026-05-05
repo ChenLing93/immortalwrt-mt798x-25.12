@@ -15,7 +15,8 @@ jobs:
           set -e  # 错误时立即退出
           
           # 克隆源码（已帮你换成 tfnhui 的 25.12 仓库）
-          git clone -b master --single-branch --filter=blob:none https://github.com/tfnhui/immortalwrt-mt798x-25.12.git openwrt
+          git clone -b 25.12 --single-branch --filter=blob:none https://github.com/tfnhui/immortalwrt-mt798x-25.12.git openwrt
+
           cd openwrt
 
           # ===== 先添加软件源，再更新 feeds =====
