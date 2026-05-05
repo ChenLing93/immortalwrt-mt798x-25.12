@@ -12,7 +12,7 @@ jobs:
 
       - name: Build firmware
         run: |
-          # 克隆你的 25.12 仓库源码
+          # 克隆 25.12 仓库源码
           git clone https://github.com/tfnhui/immortalwrt-mt798x-25.12.git openwrt
           cd openwrt
 
@@ -20,30 +20,31 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-          # 复制 RAX3000M 默认配置（使用 mt7981-ax3000.config）
+          # 使用基础配置
           cp defconfig/mt7981-ax3000.config .config
 
-
-            # 手动选择 RAX3000M 设备
-          echo "CONFIG_TARGET_mediatek_mt7981_DEVICE_cmcc_rax3000m=y" >> .config
+          # 方法：用 sed 批量关闭所有设备，再单独开启 RAX3000M
+          sed -i '/CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_/s/=y/=n/' .config
+          echo "CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cmcc_rax3000m=y" >> .config
           
-          # 可选：取消选择其他不需要的设备，避免编译多余的固件
-          # 取消可能默认选中的其他设备（如果有的话）
-          sed -i '/CONFIG_TARGET_DEVICE_mediatek_mt7981_DEVICE_/s/=y/=n/' .config
-          echo "CONFIG_TARGET_mediatek_mt7981_DEVICE_cmcc_rax3000m=y" >> .config
-
+          # 确保关闭多设备编译模式（可选，但推荐）
+          sed -i 's/CONFIG_TARGET_MULTI_PROFILE=y/CONFIG_TARGET_MULTI_PROFILE=n/' .config
 
           # 生成完整配置
           make defconfig
 
+          # 验证配置是否正确（可选，会显示选中的设备）
+          echo "=== 验证选中的设备 ==="
+          grep "CONFIG_TARGET_DEVICE.*=y" .config | grep -v "PACKAGES"
+
           # 下载编译所需的源码包
           make download -j8
 
-          # 开始编译，如果失败则单线程详细输出调试
+          # 开始编译
           make -j$(nproc) || make -j1 V=s
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
           name: immortalwrt-25.12-rax3000m-firmware
-          path: openwrt/bin/targets/mediatek/mt7981/
+          path: openwrt/bin/targets/mediatek/filogic/
