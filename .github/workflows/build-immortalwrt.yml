@@ -1,4 +1,4 @@
-name: Build ImmortalWrt for RAX3000M with OpenClash
+name: Build ImmortalWrt 25.12 for RAX3000M
 
 on:
   workflow_dispatch:
@@ -12,48 +12,28 @@ jobs:
 
       - name: Build firmware
         run: |
-          set -e
-          
-          git clone -b 25.12 --depth=1 https://github.com/tfnhui/immortalwrt-mt798x-25.12.git openwrt
+          # 克隆你的 25.12 仓库源码
+          git clone https://github.com/tfnhui/immortalwrt-mt798x-25.12.git openwrt
           cd openwrt
 
-          echo "src-git openclash https://github.com/vernesong/OpenClash.git" >> feeds.conf.default
-          echo "src-git argon https://github.com/jerrykuku/luci-theme-argon.git" >> feeds.conf.default
-          
+          # 更新 feeds
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
+          # 复制 RAX3000M 默认配置（使用 mt7981-ax3000.config）
           cp defconfig/mt7981-ax3000.config .config
-          
-          # 保持您原来的配置方式，简单直接
-          cat >> .config << 'EOF'
-          CONFIG_TARGET_PER_DEVICE_ROOTFS=y
-          CONFIG_TARGET_PROFILE="CMCC_RAX3000M"
-          CONFIG_PACKAGE_luci-app-openclash=y
-          CONFIG_PACKAGE_kmod-tun=y
-          CONFIG_PACKAGE_iptables-mod-tproxy=y
-          CONFIG_PACKAGE_luci-theme-argon=y
-          CONFIG_PACKAGE_luci-app-diskman=y
-          CONFIG_PACKAGE_kmod-usb-storage=y
-          CONFIG_PACKAGE_kmod-fs-ext4=y
-          CONFIG_PACKAGE_block-mount=y
-          EOF
 
+          # 生成完整配置
           make defconfig
+
+          # 下载编译所需的源码包
           make download -j8
-          make -j$(nproc) V=s
 
-      - name: 查看输出
-        run: |
-          cd openwrt
-          echo "=== 查找固件 ==="
-          find bin -name "*.bin" -o -name "*.itb" 2>/dev/null
-          ls -la bin/targets/mediatek/mt7981/ 2>/dev/null || ls -la bin/targets/mediatek/*/ 2>/dev/null
+          # 开始编译，如果失败则单线程详细输出调试
+          make -j$(nproc) || make -j1 V=s
 
-      - name: 上传固件
+      - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
-          name: immortalwrt-rax3000m-${{ github.run_number }}
+          name: immortalwrt-25.12-rax3000m-firmware
           path: openwrt/bin/targets/mediatek/mt7981/
-          if-no-files-found: warn
-          retention-days: 7
