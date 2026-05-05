@@ -23,11 +23,11 @@ jobs:
           # 直接复制配置文件
           cp defconfig/rax3000m-openclash.config .config
 
-          # 生成完整配置
-          #  make defconfig
+          # 生成完整配置（被注释了）
+          # make defconfig
           
-          # 在 'make defconfig' 之后执行
-          #grep CONFIG_PACKAGE_luci-app-openclash .config || { echo "::error::OpenClash is NOT selected!"; exit 1; }
+          # 验证 OpenClash（被注释了）
+          # grep CONFIG_PACKAGE_luci-app-openclash .config || { echo "::error::OpenClash is NOT selected!"; exit 1; }
 
           # 下载编译所需的源码包
           make download -j$(nproc)
@@ -44,3 +44,22 @@ jobs:
           name: immortalwrt-25.12-rax3000m-firmware
           path: openwrt/bin/targets/mediatek/filogic/
           if-no-files-found: warn
+
+      # ✅ 修正：这是一个独立的新步骤，需要正确缩进
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "ImmortalWrt 固件 Build #${{ github.run_number }}"
+          tag_name: "build-${{ github.run_number }}-${{ github.run_id }}"
+          body: |
+            ## 自动编译固件
+            
+            - 编译编号：#${{ github.run_number }}
+            - 设备：CMCC RAX3000M (eMMC)
+            - 内核：6.6
+            - 包含插件：OpenClash、磁盘管理、Argon 主题等
+          files: |
+            openwrt/bin/targets/mediatek/filogic/*.itb
+            openwrt/bin/targets/mediatek/filogic/*.bin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
