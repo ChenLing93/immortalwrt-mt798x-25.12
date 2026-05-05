@@ -85,7 +85,7 @@ jobs:
           
           # 编译（失败时自动降级到单线程排查）
           echo "=== 开始编译 ==="
-          make -j$(nproc) V=s || { echo "多线程编译失败，尝试单线程..."; make -j1 V=s; }
+          make -j$(nproc)
           
           # 检查编译结果
           if [ ! -d "bin/targets/mediatek/mt7981" ]; then
