@@ -23,6 +23,16 @@ jobs:
           # 复制 RAX3000M 默认配置（使用 mt7981-ax3000.config）
           cp defconfig/mt7981-ax3000.config .config
 
+
+            # 手动选择 RAX3000M 设备
+          echo "CONFIG_TARGET_mediatek_mt7981_DEVICE_cmcc_rax3000m=y" >> .config
+          
+          # 可选：取消选择其他不需要的设备，避免编译多余的固件
+          # 取消可能默认选中的其他设备（如果有的话）
+          sed -i '/CONFIG_TARGET_DEVICE_mediatek_mt7981_DEVICE_/s/=y/=n/' .config
+          echo "CONFIG_TARGET_mediatek_mt7981_DEVICE_cmcc_rax3000m=y" >> .config
+
+
           # 生成完整配置
           make defconfig
 
