@@ -14,22 +14,36 @@ jobs:
         run: |
           set -e
           
-          git clone -b 25.12 --single-branch --filter=blob:none https://github.com/tfnhui/immortalwrt-mt798x-25.12.git openwrt
+          # 克隆代码（使用正确的分支）
+          git clone -b 25.12 --depth=1 https://github.com/tfnhui/immortalwrt-mt798x-25.12.git openwrt
           cd openwrt
 
+          # 添加 feeds
           echo "src-git openclash https://github.com/vernesong/OpenClash.git" >> feeds.conf.default
           echo "src-git argon https://github.com/jerrykuku/luci-theme-argon.git" >> feeds.conf.default
           
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-          cp defconfig/mt7981-ax3000.config .config
+          # 检查是否存在默认配置文件
+          if [ -f defconfig/mt7981-ax3000.config ]; then
+            cp defconfig/mt7981-ax3000.config .config
+          else
+            echo "Default config not found, using make defconfig"
+            make defconfig
+          fi
           
-          sed -i 's/CONFIG_TARGET_ALL_PROFILES=y/CONFIG_TARGET_ALL_PROFILES=n/' .config
-          sed -i 's/CONFIG_TARGET_MULTI_PROFILE=y/CONFIG_TARGET_MULTI_PROFILE=n/' .config
+          # 配置固件选项
+          sed -i 's/CONFIG_TARGET_ALL_PROFILES=y/CONFIG_TARGET_ALL_PROFILES=n/' .config 2>/dev/null || true
+          sed -i 's/CONFIG_TARGET_MULTI_PROFILE=y/CONFIG_TARGET_MULTI_PROFILE=n/' .config 2>/dev/null || true
           echo "CONFIG_TARGET_PER_DEVICE_ROOTFS=y" >> .config
+          
+          # 设置目标设备和型号
+          echo "CONFIG_TARGET_mediatek=y" >> .config
+          echo "CONFIG_TARGET_mediatek_mt7981=y" >> .config
           echo "CONFIG_TARGET_PROFILE=\"CMCC_RAX3000M\"" >> .config
 
+          # 添加所需软件包
           cat >> .config << 'EOF'
           CONFIG_PACKAGE_luci-app-openclash=y
           CONFIG_PACKAGE_kmod-tun=y
@@ -60,14 +74,39 @@ jobs:
           CONFIG_PACKAGE_kmod-nls-utf8=y
           EOF
 
+          # 更新配置并编译
           make defconfig
           make download -j8
           make -j$(nproc)
 
-      - name: Upload firmware
+      - name: 调试 - 查看构建输出
+        run: |
+          echo "=== 查看构建产物目录 ==="
+          find openwrt -type d -name "bin" 2>/dev/null
+          echo "=== 查找所有 .bin 文件 ==="
+          find openwrt -name "*.bin" 2>/dev/null
+          echo "=== 查找所有固件相关文件 ==="
+          find openwrt/bin -type f 2>/dev/null || echo "bin 目录不存在"
+          echo "=== 查看 targets 目录 ==="
+          ls -la openwrt/bin/targets/ 2>/dev/null || echo "targets 目录不存在"
+
+      - name: 上传固件
         uses: actions/upload-artifact@v4
         with:
-          name: immortalwrt-rax3000m-$(date +'%Y%m%d')
-          path: openwrt/bin/targets/mediatek/mt7981/
-          if-no-files-found: error
+          name: immortalwrt-rax3000m-${{ github.run_number }}
+          path: |
+            openwrt/bin/targets/mediatek/mt7981/*.bin
+            openwrt/bin/targets/mediatek/mt7981/*.itb
+            openwrt/bin/targets/mediatek/mt7981/*.tar.gz
+            openwrt/bin/targets/mediatek/mt7981/*.zip
+            openwrt/bin/targets/*/*/*.bin
+          if-no-files-found: warn
           retention-days: 7
+
+      - name: 如果编译失败，上传完整构建日志
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: openwrt/logs/
+          retention-days: 3
