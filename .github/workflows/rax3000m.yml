@@ -24,7 +24,7 @@ jobs:
           ./scripts/feeds install -a
 
           # 生成完整配置
-          make defconfig
+          #  make defconfig
           
           # 在 'make defconfig' 之后执行
           grep CONFIG_PACKAGE_luci-app-openclash .config || { echo "::error::OpenClash is NOT selected!"; exit 1; }
