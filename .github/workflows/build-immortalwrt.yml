@@ -23,34 +23,35 @@ jobs:
       - name: Free disk space
         run: |
           sudo rm -rf /etc/localtime
-          apt-get remove -y '^dotnet-.*' '^llvm-.*' '^php.*' azure-cli firefox powershell
-          apt-get autoremove -y
-          apt-get clean
-          rm -rf /var/lib/apt/lists/*
-          rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+          sudo apt-get remove -y '^dotnet-.*' '^llvm-.*' '^php.*' azure-cli firefox powershell
+          sudo apt-get autoremove -y
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
 
       - name: Build firmware
         run: |
           git clone https://github.com/tfnhui/immortalwrt-mt798x.git openwrt
           cd openwrt
           
+          # 尝试切换分支，如果失败则继续
           git checkout 25.12 || echo "使用默认分支"
           
+          # 添加插件源
           echo "src-git openclash https://github.com/vernesong/OpenClash.git" >> feeds.conf.default
           echo "src-git argon https://github.com/jerrykuku/luci-theme-argon.git" >> feeds.conf.default
           
+          # 创建文件预置目录
           mkdir -p files
           
           ./scripts/feeds update -a
           ./scripts/feeds install -a
           
-          # 强制只编译 RAX3000M，不编译任何其他设备
+          # 只编译 RAX3000M 精简配置
           cat > .config << 'EOF'
 CONFIG_TARGET_mediatek=y
 CONFIG_TARGET_mediatek_mt7981=y
 CONFIG_TARGET_DEVICE_mediatek_mt7981_DEVICE_cmcc_rax3000m=y
-# CONFIG_TARGET_MULTI_PROFILES is not set
-# CONFIG_TARGET_ALL_PROFILES is not set
 CONFIG_PACKAGE_luci=y
 CONFIG_PACKAGE_luci-ssl=y
 CONFIG_PACKAGE_luci-app-openclash=y
@@ -62,12 +63,17 @@ EOF
           make download -j8
           make -j$(nproc) || make -j1 V=s
           
-          echo "===== 编译完成的 RAX3000M 固件 ====="
-          ls -lh bin/targets/mediatek/mt7981/*cmcc-rax3000m*
+          # 显示编译结果
+          echo "编译完成的固件："
+          ls -lh bin/targets/mediatek/mt7981/*.bin 2>/dev/null || echo "未找到 .bin 文件"
+          ls -lh bin/targets/mediatek/mt7981/*.itb 2>/dev/null || echo "未找到 .itb 文件"
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
           name: RAX3000M-ImmortalWrt-25.12
-          path: openwrt/bin/targets/mediatek/mt7981/*cmcc-rax3000m*
+          path: |
+            openwrt/bin/targets/mediatek/mt7981/*.bin
+            openwrt/bin/targets/mediatek/mt7981/*.itb
+            openwrt/bin/targets/mediatek/mt7981/*.img
           if-no-files-found: error
