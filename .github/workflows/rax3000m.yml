@@ -25,12 +25,15 @@ jobs:
 
           # 生成完整配置
           make defconfig
+          
+          # 在 'make defconfig' 之后执行
+          grep CONFIG_PACKAGE_luci-app-openclash .config || { echo "::error::OpenClash is NOT selected!"; exit 1; }
 
           # 下载编译所需的源码包
-          make download -j8
+          make download -j$(nproc)
 
           # 开始编译
-          make -j$(nproc) || make -j1 V=s
+          make -j$(nproc)
           
           # 删除 packages 目录（不需要上传）
           rm -rf bin/targets/mediatek/filogic/packages
