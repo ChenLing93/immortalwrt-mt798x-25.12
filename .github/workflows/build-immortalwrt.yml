@@ -10,6 +10,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential clang flex bison g++ gawk gcc-multilib \
+          gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev file wget
+
       - name: Build firmware
         run: |
           # 克隆 25.12 仓库源码
@@ -23,17 +29,127 @@ jobs:
           # 使用基础配置
           cp defconfig/mt7981-ax3000.config .config
 
-          # 方法：用 sed 批量关闭所有设备，再单独开启 RAX3000M
-          sed -i '/CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_/s/=y/=n/' .config
-          echo "CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cmcc_rax3000m=y" >> .config
+          # 写入 RAX3000M 配置
+          cat >> .config << 'EOF'
+          # 目标平台
+          CONFIG_TARGET_mediatek=y
+          CONFIG_TARGET_mediatek_filogic=y
+          CONFIG_TARGET_MULTI_PROFILE=n
           
-          # 确保关闭多设备编译模式（可选，但推荐）
-          sed -i 's/CONFIG_TARGET_MULTI_PROFILE=y/CONFIG_TARGET_MULTI_PROFILE=n/' .config
+          # 选择 RAX3000M (NAND 版本)
+          CONFIG_TARGET_mediatek_filogic_DEVICE_cmcc_rax3000m=y
+          CONFIG_TARGET_PROFILE="DEVICE_cmcc_rax3000m"
+          CONFIG_TARGET_ROOTFS_PARTSIZE=160
+          
+          # 内核模块
+          CONFIG_PACKAGE_kmod-usb-core=y
+          CONFIG_PACKAGE_kmod-usb3=y
+          CONFIG_PACKAGE_kmod-usb-storage=y
+          CONFIG_PACKAGE_kmod-usb-storage-extras=y
+          CONFIG_PACKAGE_kmod-usb-storage-uas=y
+          CONFIG_PACKAGE_kmod-usb-xhci-hcd=y
+          CONFIG_PACKAGE_kmod-usb-xhci-mtk=y
+          CONFIG_PACKAGE_kmod-fs-vfat=y
+          CONFIG_PACKAGE_kmod-fs-exfat=y
+          CONFIG_PACKAGE_kmod-fs-ntfs3=y
+          CONFIG_PACKAGE_kmod-fs-autofs4=y
+          CONFIG_PACKAGE_kmod-fs-btrfs=y
+          CONFIG_PACKAGE_kmod-leds-gpio=y
+          CONFIG_PACKAGE_kmod-gpio-button-hotplug=y
+          CONFIG_PACKAGE_kmod-tun=y
+          CONFIG_PACKAGE_kmod-ipt-tproxy=y
+          CONFIG_PACKAGE_kmod-inet-diag=y
+          CONFIG_PACKAGE_kmod-nf-flow=y
+          CONFIG_PACKAGE_kmod-nft-offload=y
+          
+          # WiFi 驱动
+          CONFIG_PACKAGE_kmod-mt_wifi=y
+          CONFIG_MTK_WIFI_DRIVER=y
+          CONFIG_MTK_FIRST_IF_MT7981=y
+          CONFIG_MTK_CHIP_MT7981=y
+          
+          # 基础工具
+          CONFIG_PACKAGE_iwinfo=y
+          CONFIG_PACKAGE_iw=y
+          CONFIG_PACKAGE_tcpdump=y
+          CONFIG_PACKAGE_ethtool=y
+          CONFIG_PACKAGE_ip-full=y
+          CONFIG_PACKAGE_ipset=y
+          CONFIG_PACKAGE_iptables-nft=y
+          CONFIG_PACKAGE_nftables-json=y
+          CONFIG_PACKAGE_bash=y
+          CONFIG_PACKAGE_curl=y
+          CONFIG_PACKAGE_openssl-util=y
+          CONFIG_PACKAGE_tar=y
+          CONFIG_PACKAGE_unzip=y
+          CONFIG_PACKAGE_nano=y
+          CONFIG_PACKAGE_htop=y
+          
+          # LuCI 核心
+          CONFIG_PACKAGE_luci=y
+          CONFIG_PACKAGE_luci-base=y
+          CONFIG_PACKAGE_luci-mod-admin-full=y
+          CONFIG_PACKAGE_luci-mod-network=y
+          CONFIG_PACKAGE_luci-mod-status=y
+          CONFIG_PACKAGE_luci-mod-system=y
+          CONFIG_PACKAGE_luci-proto-ipv6=y
+          CONFIG_PACKAGE_luci-proto-ppp=y
+          CONFIG_PACKAGE_luci-compat=y
+          
+          # 插件
+          CONFIG_PACKAGE_luci-app-openclash=y
+          CONFIG_PACKAGE_luci-theme-argon=y
+          CONFIG_PACKAGE_luci-app-diskman=y
+          CONFIG_PACKAGE_luci-app-diskman_INCLUDE_btrfs_progs=y
+          CONFIG_PACKAGE_luci-app-diskman_INCLUDE_lsblk=y
+          CONFIG_PACKAGE_luci-app-package-manager=y
+          CONFIG_PACKAGE_luci-app-ttyd=y
+          CONFIG_PACKAGE_luci-app-turboacc-mtk=y
+          CONFIG_PACKAGE_luci-app-upnp=y
+          CONFIG_PACKAGE_luci-app-mtwifi-cfg=y
+          CONFIG_PACKAGE_luci-app-eqos-mtk=y
+          
+          # 中文语言包
+          CONFIG_PACKAGE_luci-i18n-base-zh-cn=y
+          CONFIG_PACKAGE_luci-i18n-firewall-zh-cn=y
+          CONFIG_PACKAGE_luci-i18n-diskman-zh-cn=y
+          CONFIG_PACKAGE_luci-i18n-turboacc-mtk-zh-cn=y
+          CONFIG_PACKAGE_luci-i18n-upnp-zh-cn=y
+          CONFIG_PACKAGE_luci-i18n-mtwifi-cfg-zh-cn=y
+          CONFIG_PACKAGE_luci-i18n-eqos-mtk-zh-cn=y
+          CONFIG_PACKAGE_default-settings-chn=y
+          
+          # UCI 默认设置
+          CONFIG_PACKAGE_ucode=y
+          CONFIG_PACKAGE_ucode-mod-fs=y
+          CONFIG_PACKAGE_ucode-mod-math=y
+          CONFIG_PACKAGE_ucode-mod-ubus=y
+          CONFIG_PACKAGE_ucode-mod-uci=y
+          CONFIG_PACKAGE_ucode-mod-uloop=y
+          
+          # 常用工具
+          CONFIG_PACKAGE_block-mount=y
+          CONFIG_PACKAGE_fdisk=y
+          CONFIG_PACKAGE_lsblk=y
+          CONFIG_PACKAGE_parted=y
+          CONFIG_PACKAGE_blkid=y
+          CONFIG_PACKAGE_automount=y
+          CONFIG_PACKAGE_htop=y
+          CONFIG_PACKAGE_zram-swap=y
+          
+          # DNS 和 DHCP
+          CONFIG_PACKAGE_dnsmasq-full=y
+          CONFIG_PACKAGE_dnsmasq_full_dhcp=y
+          CONFIG_PACKAGE_dnsmasq_full_dhcpv6=y
+          CONFIG_PACKAGE_dnsmasq_full_dnssec=y
+          CONFIG_PACKAGE_odhcp6c=y
+          CONFIG_PACKAGE_odhcpd-ipv6only=y
+          EOF
 
           # 生成完整配置
           make defconfig
 
-          # 验证配置是否正确（可选，会显示选中的设备）
+          # 验证配置
           echo "=== 验证选中的设备 ==="
           grep "CONFIG_TARGET_DEVICE.*=y" .config | grep -v "PACKAGES"
 
