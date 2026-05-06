@@ -23,7 +23,7 @@ jobs:
           
           # 更新 feeds
           ./scripts/feeds update -a
-          ./scripts/feeds install -a
+          ./scripts/install -a
           
           # 直接复制配置文件
           cp defconfig/rax3000m-openclash.config .config
@@ -51,13 +51,11 @@ jobs:
           tag_name: "build-${{ steps.date.outputs.date }}-${{ github.run_number }}"
           body: |
             ## 自动编译固件
-            
             - 编译时间：${{ steps.date.outputs.date }}
             - 编译编号：#${{ github.run_number }}
             - 设备：CMCC RAX3000M (eMMC / NAND)
             - 内核：6.12（25.12 版本）
             - 包含插件：OpenClash、磁盘管理、Argon 主题等
-          files: |
-            ${{ github.workspace }}/openwrt/bin/targets/mediatek/filogic/
+          files: openwrt/bin/targets/mediatek/filogic/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
