@@ -13,28 +13,28 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
 
-      # 🔥 关键：不编译！直接创建假的固件文件（1秒完成）
-      - name: Create dummy firmware
+      # 🔥 创建有效测试文件（不是空文件，必过GitHub校验）
+      - name: Create valid test firmware
         run: |
           mkdir -p openwrt/bin/targets/mediatek/filogic/
-          # 创建测试固件文件
-          touch openwrt/bin/targets/mediatek/filogic/immortalwrt-rax3000m-squashfs-sysupgrade.bin
-          touch openwrt/bin/targets/mediatek/filogic/immortalwrt-rax3000m-squashfs-factory.itb
+          # 生成有内容的测试文件，大小>0，必成功上传
+          echo "test" > openwrt/bin/targets/mediatek/filogic/immortalwrt-rax3000m-squashfs-sysupgrade.bin
+          echo "test" > openwrt/bin/targets/mediatek/filogic/immortalwrt-rax3000m-squashfs-factory.itb
 
-      # 上传测试文件
+      # 上传测试
       - name: Upload test artifact
         uses: actions/upload-artifact@v4
         with:
           name: test-firmware
           path: openwrt/bin/targets/mediatek/filogic/
 
-      # ✅ 发布 Release（测试用）
+      # ✅ 发布 Release（必成功）
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           name: "TEST RAX3000M ${{ steps.date.outputs.date }} #${{ github.run_number }}"
           tag_name: "test-${{ steps.date.outputs.date }}-${{ github.run_number }}"
-          body: "测试上传，无真实编译"
+          body: "✅ 测试成功！无编译，仅验证上传功能"
           files: openwrt/bin/targets/mediatek/filogic/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
