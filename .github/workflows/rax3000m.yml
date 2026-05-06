@@ -1,40 +1,60 @@
-name: Test Release Upload (No Build)
+name: Build ImmortalWrt 25.12 for RAX3000M
+
 on:
   workflow_dispatch:
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 新增：获取当前日期
       - name: Get current date
         id: date
         run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
 
-      # 🔥 创建有效测试文件（不是空文件，必过GitHub校验）
-      - name: Create valid test firmware
+      - name: Build firmware
         run: |
-          mkdir -p openwrt/bin/targets/mediatek/filogic/
-          # 生成有内容的测试文件，大小>0，必成功上传
-          echo "test" > openwrt/bin/targets/mediatek/filogic/immortalwrt-rax3000m-squashfs-sysupgrade.bin
-          echo "test" > openwrt/bin/targets/mediatek/filogic/immortalwrt-rax3000m-squashfs-factory.itb
-
-      # 上传测试
-      - name: Upload test artifact
+          # 克隆 25.12 仓库源码
+          git clone https://github.com/tfnhui/immortalwrt-mt798x-25.12.git openwrt
+          cd openwrt
+          
+          # 更新 feeds
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          
+          # 直接复制配置文件
+          cp defconfig/rax3000m-openclash.config .config
+          # 下载编译所需的源码包
+          make download -j$(nproc)
+          # 开始编译
+          make -j$(nproc)
+          
+          # 删除 packages 目录（不需要上传）
+          rm -rf bin/targets/mediatek/filogic/packages
+          
+      - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
-          name: test-firmware
+          name: immortalwrt-25.12-rax3000m-firmware
           path: openwrt/bin/targets/mediatek/filogic/
+          if-no-files-found: warn
 
-      # ✅ 发布 Release（必成功）
-      - name: Create Release
+      - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v1
         with:
-          name: "TEST RAX3000M ${{ steps.date.outputs.date }} #${{ github.run_number }}"
-          tag_name: "test-${{ steps.date.outputs.date }}-${{ github.run_number }}"
-          body: "✅ 测试成功！无编译，仅验证上传功能"
+          name: "RAX3000M 固件 ${{ steps.date.outputs.date }} #${{ github.run_number }}"
+          tag_name: "build-${{ steps.date.outputs.date }}-${{ github.run_number }}"
+          body: |
+            ## 自动编译固件
+            
+            - 编译时间：${{ steps.date.outputs.date }}
+            - 编译编号：#${{ github.run_number }}
+            - 设备：CMCC RAX3000M (eMMC / NAND)
+            - 内核：6.12（25.12 版本）
+            - 包含插件：OpenClash、磁盘管理、Argon 主题等
           files: openwrt/bin/targets/mediatek/filogic/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
