@@ -58,6 +58,6 @@ jobs:
             - 内核：6.12（25.12 版本）
             - 包含插件：OpenClash、磁盘管理、Argon 主题等
           files: |
-            openwrt/bin/targets/mediatek/filogic/
+            ${{ github.workspace }}/openwrt/bin/targets/mediatek/filogic/
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
