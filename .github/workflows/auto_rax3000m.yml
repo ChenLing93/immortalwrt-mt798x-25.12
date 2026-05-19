@@ -1,10 +1,9 @@
-
-name: Build  Auto ImmortalWrt 25.12 RAX3000M
+name: Build ImmortalWrt 25.12 for RAX3000M
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * *'  # 每天8点自动检测
 
 jobs:
   build:
@@ -53,8 +52,8 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
           
-          # 这里用你自己仓库里的配置文件（标准原生写法）
-          curl -L -o .config https://raw.githubusercontent.com/tfnhui/immortalwrt-mt798x-25.12/main/defconfig/rax3000m.config
+          # 修复：把你的配置文件从当前仓库复制过去（最稳！）
+          cp ../defconfig/rax3000m.config .config
           
           make download -j$(nproc)
           make -j$(nproc)
