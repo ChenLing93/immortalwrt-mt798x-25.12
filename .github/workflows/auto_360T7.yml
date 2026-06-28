@@ -1,4 +1,4 @@
-name: Auto ImmortalWrt 25.12 for RAX3000M
+name: Auto ImmortalWrt 25.12 for 360T7
 
 on:
   workflow_dispatch:
