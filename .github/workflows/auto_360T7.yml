@@ -85,7 +85,7 @@ jobs:
         if: steps.check.outputs.need_build == 'true'
         uses: softprops/action-gh-release@v1
         with:
-          name: "RAX3000M 固件 ${{ steps.date.outputs.date }} #${{ github.run_number }}"
+          name: "360T7 固件 ${{ steps.date.outputs.date }} #${{ github.run_number }}"
           tag_name: "build-${{ steps.date.outputs.date }}-${{ github.run_number }}"
           body: |
             ## 自动编译固件
@@ -94,7 +94,7 @@ jobs:
             - 编译编号：#${{ github.run_number }}
             - 设备：360T7
             - 内核：6.12（25.12 版本）
-            - 包含插件：OpenClash、磁盘管理、Argon 主题等
+            - 包含插件：OpenClash、passwall 磁盘管理、Argon 主题等
             - 上游：chasey-dev/immortalwrt-mt798x-rebase
           files: openwrt/bin/targets/mediatek/filogic/*
         env:
