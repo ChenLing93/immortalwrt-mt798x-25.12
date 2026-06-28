@@ -92,7 +92,7 @@ jobs:
             
             - 编译时间：${{ steps.date.outputs.date }}
             - 编译编号：#${{ github.run_number }}
-            - 设备：CMCC RAX3000M (eMMC / NAND)
+            - 设备：360T7
             - 内核：6.12（25.12 版本）
             - 包含插件：OpenClash、磁盘管理、Argon 主题等
             - 上游：chasey-dev/immortalwrt-mt798x-rebase
